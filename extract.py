@@ -8,7 +8,7 @@ from secret_data import CLIENT_ID, CLIENT_SECRET
 class SoundCloudAnalyse:
     #https://soundcloud.com/connect
     #https://api.soundcloud.com/oauth2/token
-    # http://api.soundcloud.com/playlists/405726?client_id=YOUR_CLIENT_ID
+    #http://api.soundcloud.com/playlists/405726?client_id=YOUR_CLIENT_ID
 
     def get_tracks_from_playlist(self,playlist_id):
         r_tracks = requests.get("http://api.soundcloud.com/playlists/" + str(playlist_id) + "?client_id=" + CLIENT_ID) 
