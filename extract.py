@@ -31,13 +31,12 @@ class SoundCloudAnalyse:
         return []
 
     def get_stream(self, track_id):
-        r_track = requests.get("http://api.soundcloud.com/tracks/" + str(track_id) + "/stream?client_id=" + CLIENT_ID) 
-        print("http://api.soundcloud.com/tracks/" + str(track_id) + "/download?client_id=" + CLIENT_ID)
+        r_track = requests.get("http://api.soundcloud.com/tracks/" + str(track_id) + "/stream?client_id=" + CLIENT_ID,stream=True) 
         if r_track.status_code == 200:
-            print(r_track.raw)
             with open("test.wav", 'wb') as f:
-                r_track.raw.decode_content = True
-                shutil.copyfileobj(r_track.raw, f)
+                for chunk in r_track.iter_content(chunk_size=1024): 
+                    if chunk:
+                        f.write(chunk)
         else:
             print("Unable to reach such file (" + str(track_id) + ").")
 
