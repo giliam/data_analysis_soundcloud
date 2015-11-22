@@ -1,0 +1,170 @@
+/*
+ * ProcessingTools.cpp
+ *
+ *  Created on: 4 sept. 2014
+ *      Author: anis
+ */
+
+#include "ProcessingTools.h"
+#include <cmath>
+#include <iostream>
+#include <cstdio>
+#include <SDL2/SDL.h>
+
+
+using namespace Eigen;
+
+
+ProcessingTools::ProcessingTools() {
+	// TODO Auto-generated constructor stub
+
+}
+
+int ProcessingTools::nextpow2(int x){
+	int k = 0;
+	while(x >= 1){
+		x = x/2;
+		k++;
+	}
+	return k;
+}
+
+double* ProcessingTools::hamming(int N){
+	double* hamming = new double[N];
+	for(int k = 0; k < N; k++){
+		hamming[k] = 0.54 - 0.46*cos((2*M_PI*k)/N) ;
+	}
+	return hamming;
+}
+
+double* ProcessingTools::blackmann(int N){
+	double* blackmann = new double[N];
+	for(int k = 0; k < N; k++){
+		blackmann[k] = (0.42 - 0.5*cos((2*M_PI*k)/N) + 0.08*cos((4*M_PI*k)/N));
+	}
+	return blackmann;
+}
+
+
+double ProcessingTools::max(double * array, int N){
+	double tmp = 0;
+	for(int k=0; k<N; k++){
+		if(array[k] > tmp){
+			tmp = array[k];
+		}
+	}
+
+	return tmp;
+}
+
+
+double ProcessingTools::max(Matrix<Complex,Dynamic,1>* array, int N){
+	int i;
+	double tmp = 0;
+	for(int k=0; k<N; k++){
+		if(abs((*array)[k]) > tmp){
+			tmp = abs((*array)[k]);
+			i = k;
+		}
+	}
+	std::cout << "max index for " << i << std::endl;
+	return tmp;
+}
+
+
+double ProcessingTools::max(std::vector<double>* array, int N){
+	int i;
+	double tmp = 0;
+	for(int k=0; k <N; k++){
+		if((*array)[k] > tmp){
+			tmp = (*array)[k];
+			i = k;
+		}
+	}
+	std::cout << "max index for " << i << std::endl;
+	return tmp;
+}
+
+
+/*double ProcessingTools::mean(Matrix<Complex,Dynamic,1>* array, int s, int e){
+	double sum = 0;
+	for(int i=s; i < e; i++)
+		sum+=std::abs((*array)[i]);
+	return sum/(e-s);
+}*/
+
+
+template<typename T>
+double ProcessingTools::mean(T* array, int s, int e){
+	double sum = 0;
+	for(int i=s; i < e; i++)
+		sum+=std::abs((*array)[i]);
+	return sum/(e-s);
+}
+
+template<typename T>
+void ProcessingTools::plotData(T* data, int l){
+	int height=500;
+	int colWidth = 1;
+	int offsetX = 10;
+	int width=std::min(l, 1200);
+	int step = std::ceil(l/double(width));
+	std::cout << "step=" << step << std::endl;
+	if(SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
+        /* Handle problem */
+        fprintf(stderr, "%s\n", SDL_GetError());
+    }
+	SDL_Window* window = SDL_CreateWindow("Plot",
+                                      SDL_WINDOWPOS_UNDEFINED,
+                                      SDL_WINDOWPOS_UNDEFINED,
+                                      width+2*offsetX,
+                                      height,
+                                      SDL_WINDOW_RESIZABLE);
+	SDL_Surface *ecran = NULL;
+	SDL_Event event;
+	ecran = SDL_GetWindowSurface(window);
+	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
+    if(renderer == NULL)
+    {
+        /* Handle problem */
+        fprintf(stderr, "%s\n", SDL_GetError());
+        SDL_Quit();
+    }
+    SDL_Rect r;
+    r.y = height/2;
+    r.w = colWidth;
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255 );
+
+
+	// Clear window
+    SDL_RenderClear( renderer );
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255 );
+
+	double m = ProcessingTools::max(data, l);
+	std::cout << "m=" << m << std::endl;
+	for(int k = 0; k < l-step; k+=step){
+		r.x = k*colWidth/step+offsetX;
+    	r.h = -(height/2)*(ProcessingTools::mean(data, k, k+step)/m);
+	    SDL_RenderFillRect(renderer, &r );
+	    r.h = - r.h;
+	    SDL_RenderFillRect(renderer, &r );
+	}
+	SDL_RenderPresent(renderer);
+	bool goOn = true;
+	while (goOn){
+		SDL_PollEvent(&event);
+		if(event.type == SDL_QUIT){
+			goOn = false;
+		}
+	}
+    //SDL_Quit();
+
+}
+
+
+
+ProcessingTools::~ProcessingTools() {
+	// TODO Auto-generated destructor stub
+}
+
