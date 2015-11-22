@@ -4,7 +4,7 @@ import csv
 import json
 import shutil
 from secret_data import CLIENT_ID, CLIENT_SECRET
-import wave 
+import sys
 class SoundCloudAnalyse:
     #https://soundcloud.com/connect
     #https://api.soundcloud.com/oauth2/token
@@ -40,10 +40,17 @@ class SoundCloudAnalyse:
     def get_stream(self, track_id):
         r_track = requests.get(self._tracks_ + str(track_id) + "/stream?client_id=" + CLIENT_ID,stream=True) 
         if r_track.status_code == 200:
-            with wave.openfp(str(track_id)+".wav", 'wb') as f:
-                for chunk in r_track.iter_content(chunk_size=1024): 
-                    if chunk:
-                        f.write(chunk)
+            f = open(str(track_id)+".mp3", 'wb')
+            i = 0
+            for chunk in r_track.iter_content(chunk_size=1024): 
+                i+=1
+                if chunk:
+                    sys.stdout.write("Downloaded: %d bytes \r" % (1024*i) )
+                    sys.stdout.flush()
+                    f.write(chunk)
+            f.close()
+            
+            
         else:
             print("Unable to reach such file (" + str(track_id) + ").")
 
