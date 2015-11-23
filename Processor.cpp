@@ -23,7 +23,7 @@ m_bufsize(0)
         
     fft_in = fftw_alloc_complex(FFT_SIZE);
     fft_out = fftw_alloc_complex(FFT_SIZE);
-    trans=fftw_plan_dft_1d(FFT_SIZE,fft_in,fft_out,FFTW_FORWARD,FFTW_MEASURE);
+    trans = fftw_plan_dft_1d(FFT_SIZE,fft_in,fft_out,FFTW_FORWARD,FFTW_MEASURE);
     
     m_file = sf_open(path, SFM_READ, &m_fileInfo);
     if(!m_file){
@@ -41,7 +41,7 @@ m_bufsize(0)
 
 Processor::~Processor()
 {
-    delete[] m_buffer;
+    //delete m_buffer;
 }
 
 sf_count_t Processor::read_frames(size_t start){
@@ -99,11 +99,19 @@ void Processor::to_mono(fftw_complex* fft_data, sf_count_t count){
 }
 
 void Processor::process(){
+    std::cout << "Processing file." << std::endl;
+
     size_t frame_idx = 0;
     sf_count_t readCount = 0;
-    while((readCount = read_frames(frame_idx)) >= 0){
+    while((readCount = read_frames(frame_idx)) > 0){
         to_mono(fft_in, readCount);
-    }
+        frame_idx+=readCount;
+    }    
+    std::cout << "Buffering done." << std::endl;
+
+    fftw_execute(trans);
+
+    std::cout << "Processing file done." << std::endl;
 }
 
 
@@ -111,6 +119,7 @@ int main(int argc, char** argv){
     signal(SIGSEGV, handler);
     if(argc >=1){
         Processor p(argv[1]);
+        p.process();
     }
     return 0;
 }
