@@ -5,6 +5,8 @@ import json
 import shutil
 from secret_data import CLIENT_ID, CLIENT_SECRET
 import sys
+from pydub import AudioSegment
+
 class SoundCloudAnalyse:
     #https://soundcloud.com/connect
     #https://api.soundcloud.com/oauth2/token
@@ -49,6 +51,8 @@ class SoundCloudAnalyse:
                     sys.stdout.flush()
                     f.write(chunk)
             f.close()
+            song = AudioSegment.from_mp3(str(track_id) + ".mp3")
+            song.export(str(track_id) + ".wav", format="wav")
             
             
         else:
