@@ -6,6 +6,8 @@
  */
 
 #include "ProcessingTools.h"
+#include <fstream> 
+
 #include <cmath>
 #include <iostream>
 #include <cstdio>
@@ -94,7 +96,8 @@ float ProcessingTools::compute_centroid(float* fft_out, const int FFT_SIZE){
     }
     if(down == 0){
         std::cerr << "divide by zero" << std::endl;
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        return 0;
     }
     return up/down;
 }

@@ -45,16 +45,17 @@ m_bufsize(0)
 
 Processor::~Processor()
 {
-    //delete m_buffer;
 }
 
 sf_count_t Processor::read_frames(size_t start){
     size_t count = FFT_SIZE;
     sf_count_t readCount = 0;
     if (!m_file || !m_channelCount) {
+        std::cerr << "no file or no channel" << std::endl;
         return 0;
     }
     if ((long)start >= m_fileInfo.frames) {
+        std::cerr << "end of file" << std::endl;
 	    return 0;
     }
     if (long(start + m_bufsize) > m_fileInfo.frames) {
@@ -107,13 +108,31 @@ void Processor::process(){
 
     size_t frame_idx = 0;
     sf_count_t readCount = 0;
+
+    int i = 0;
+    float centroid = 0;
+
     while((readCount = read_frames(frame_idx)) > 0){
         to_mono(fft_in, readCount);
         frame_idx+=readCount;
-    }    
-    std::cout << "Buffering done." << std::endl;
 
-    fftw_execute(trans);
+        if( i < 10 ){
+            fftw_execute(trans);
+            for(int j=0; j < m_bufsize/m_channelCount; j++){
+                std::cout << fft_in[j][0];
+            }
+            float* magnitudes = new float[FFT_SIZE];
+            float* lolz = ProcessingTools::get_magnitude(magnitudes, fft_out, FFT_SIZE);
+            float result = ProcessingTools::compute_centroid(magnitudes, FFT_SIZE);
+            std::cout << "Result: ";
+            std::cout << (result) << std::endl;
+            centroid += result;
+            i++;
+        }
+    }    
+
+    std::cout << "Centroid: ";
+    std::cout << (centroid/10) << std::endl;
 
     std::cout << "Processing file done." << std::endl;
 }
@@ -126,16 +145,14 @@ fftw_complex* Processor::get_fft_out(){
     return fft_out;
 }
 
-void save_to_file(fftw_complex* data, int size)
+void save_to_file(float* data)
 {
     std::cout << "Trying to save data into output file." << std::endl;
     std::ofstream fout("output.txt");
     if(fout.is_open())
     {
-        for(int i = 0; i < size; i++) {
-            fout << data[i][0];
-            fout << "-";
-            fout << data[i][1];
+        for(int i = 0; i < 2048; i++) {
+            fout << data[i];
             //fout << "\n";
         }
         std::cout << "Array data saved into output file." << std::endl;
@@ -143,6 +160,7 @@ void save_to_file(fftw_complex* data, int size)
     else {
         std::cout << "File could not be opened." << std::endl;
     }
+    fout.close();
 }
 
 int main(int argc, char** argv){
@@ -150,10 +168,6 @@ int main(int argc, char** argv){
     if(argc >=1){
         Processor p(argv[1]);
         p.process();
-        float* magnitudes = new float[p.FFT_SIZE];
-        float* lolz = ProcessingTools::get_magnitude(magnitudes, p.get_fft_out(), p.FFT_SIZE);
-        save_to_file(p.get_fft_out(), p.FFT_SIZE);
-        float result = ProcessingTools::compute_centroid(magnitudes, p.FFT_SIZE);
     }
     return 0;
 }
