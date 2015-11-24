@@ -11,15 +11,16 @@ class Processor{
         size_t m_channelCount;
         size_t m_sampleRate;
         mutable size_t m_bufsize;
-        const int FFT_SIZE = 2048;
         fftw_plan trans;
         fftw_complex *fft_in,*fft_out;
         void handler(int sig);
     public:
+        const int FFT_SIZE = 2048;
         virtual ~Processor();
         Processor(const char * path);
         void to_mono(fftw_complex* fft_data, sf_count_t count);
         sf_count_t read_frames(size_t start);
         void process();
-        
+        fftw_complex* get_fft_in();
+        fftw_complex* get_fft_out();
 };

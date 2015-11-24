@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
 #include "Processor.h"
-#include <execinfo.h>
+#include "ProcessingTools.h"
 #include <execinfo.h>
 #include <signal.h>
 #include <unistd.h>
@@ -114,12 +114,22 @@ void Processor::process(){
     std::cout << "Processing file done." << std::endl;
 }
 
+fftw_complex* Processor::get_fft_in(){
+    return fft_in;
+}
+
+fftw_complex* Processor::get_fft_out(){
+    return fft_out;
+}
 
 int main(int argc, char** argv){
     signal(SIGSEGV, handler);
     if(argc >=1){
         Processor p(argv[1]);
         p.process();
+        float* magnitudes = new float[p.FFT_SIZE];
+        float* lolz = ProcessingTools::get_magnitude(magnitudes, p.get_fft_out(), p.FFT_SIZE);
+        float result = ProcessingTools::compute_centroid(magnitudes, p.FFT_SIZE);
     }
     return 0;
 }

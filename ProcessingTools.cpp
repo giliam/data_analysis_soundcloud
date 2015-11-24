@@ -10,14 +10,11 @@
 #include <iostream>
 #include <cstdio>
 #include <SDL2/SDL.h>
-
-
-using namespace Eigen;
+#include <stdlib.h>     /* exit, EXIT_FAILURE */
 
 
 ProcessingTools::ProcessingTools() {
-	// TODO Auto-generated constructor stub
-
+	std::cout << "COUCOU" << std::endl;
 }
 
 int ProcessingTools::nextpow2(int x){
@@ -58,20 +55,6 @@ double ProcessingTools::max(double * array, int N){
 }
 
 
-double ProcessingTools::max(Matrix<Complex,Dynamic,1>* array, int N){
-	int i;
-	double tmp = 0;
-	for(int k=0; k<N; k++){
-		if(abs((*array)[k]) > tmp){
-			tmp = abs((*array)[k]);
-			i = k;
-		}
-	}
-	std::cout << "max index for " << i << std::endl;
-	return tmp;
-}
-
-
 double ProcessingTools::max(std::vector<double>* array, int N){
 	int i;
 	double tmp = 0;
@@ -85,21 +68,35 @@ double ProcessingTools::max(std::vector<double>* array, int N){
 	return tmp;
 }
 
-
-/*double ProcessingTools::mean(Matrix<Complex,Dynamic,1>* array, int s, int e){
-	double sum = 0;
-	for(int i=s; i < e; i++)
-		sum+=std::abs((*array)[i]);
-	return sum/(e-s);
-}*/
-
-
 template<typename T>
 double ProcessingTools::mean(T* array, int s, int e){
 	double sum = 0;
 	for(int i=s; i < e; i++)
 		sum+=std::abs((*array)[i]);
 	return sum/(e-s);
+}
+
+float* ProcessingTools::get_magnitude(float* magnitudes, fftw_complex* data, const int FFT_SIZE){
+	for (int i = 0; i < FFT_SIZE; ++i)
+	{
+		magnitudes[i] = std::sqrt(data[i][0]*data[i][0]+data[i][1]*data[i][1]);
+	}
+    return magnitudes;
+}
+
+
+float ProcessingTools::compute_centroid(float* fft_out, const int FFT_SIZE){
+    float up = 0, down = 0;
+    for (int i = 0; i < FFT_SIZE; ++i)
+    {
+        up += i*fft_out[i];
+        down += fft_out[i];
+    }
+    if(down == 0){
+        std::cerr << "divide by zero" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    return up/down;
 }
 
 template<typename T>
