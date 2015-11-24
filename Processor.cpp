@@ -1,11 +1,15 @@
 #include <iostream>
+#include <fstream> 
+
 #include <stdio.h>
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
+#include <signal.h>
+#include <execinfo.h>
+#include <unistd.h>
+
 #include "Processor.h"
 #include "ProcessingTools.h"
-#include <execinfo.h>
-#include <signal.h>
-#include <unistd.h>
+
 
 Processor::Processor(const char* path) :
 m_file(0),
@@ -122,6 +126,25 @@ fftw_complex* Processor::get_fft_out(){
     return fft_out;
 }
 
+void save_to_file(fftw_complex* data, int size)
+{
+    std::cout << "Trying to save data into output file." << std::endl;
+    std::ofstream fout("output.txt");
+    if(fout.is_open())
+    {
+        for(int i = 0; i < size; i++) {
+            fout << data[i][0];
+            fout << "-";
+            fout << data[i][1];
+            //fout << "\n";
+        }
+        std::cout << "Array data saved into output file." << std::endl;
+    }
+    else {
+        std::cout << "File could not be opened." << std::endl;
+    }
+}
+
 int main(int argc, char** argv){
     signal(SIGSEGV, handler);
     if(argc >=1){
@@ -129,6 +152,7 @@ int main(int argc, char** argv){
         p.process();
         float* magnitudes = new float[p.FFT_SIZE];
         float* lolz = ProcessingTools::get_magnitude(magnitudes, p.get_fft_out(), p.FFT_SIZE);
+        save_to_file(p.get_fft_out(), p.FFT_SIZE);
         float result = ProcessingTools::compute_centroid(magnitudes, p.FFT_SIZE);
     }
     return 0;
