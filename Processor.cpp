@@ -41,7 +41,7 @@ m_bufsize(0)
 
 Processor::~Processor()
 {
-    delete[] m_buffer;
+    //delete[] m_buffer;
 }
 
 sf_count_t Processor::read_frames(size_t start){
@@ -101,8 +101,9 @@ void Processor::to_mono(fftw_complex* fft_data, sf_count_t count){
 void Processor::process(){
     size_t frame_idx = 0;
     sf_count_t readCount = 0;
-    while((readCount = read_frames(frame_idx)) >= 0){
+    while((readCount = read_frames(frame_idx)) > 0){
         to_mono(fft_in, readCount);
+        frame_idx+=readCount;
     }
 }
 
@@ -111,6 +112,7 @@ int main(int argc, char** argv){
     signal(SIGSEGV, handler);
     if(argc >=1){
         Processor p(argv[1]);
+        p.process();
     }
     return 0;
 }
