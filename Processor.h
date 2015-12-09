@@ -1,5 +1,6 @@
 #include "sndfile.h"
 #include <fftw3.h>
+#include <SDL2/SDL.h>
 
 class Processor{
     protected:
@@ -23,4 +24,6 @@ class Processor{
         void process();
         fftw_complex* get_fft_in();
         fftw_complex* get_fft_out();
+        SDL_Renderer* yield_renderer();
+
 };

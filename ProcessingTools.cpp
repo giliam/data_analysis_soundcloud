@@ -11,7 +11,7 @@
 #include <cmath>
 #include <iostream>
 #include <cstdio>
-#include <SDL2/SDL.h>
+
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
 
 
@@ -162,6 +162,25 @@ void ProcessingTools::plotData(T* data, int l){
 
 }
 
+
+void ProcessingTools::plotData(SDL_Renderer* renderer, fftw_complex* data, int l){
+    // Clear window
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255 );
+    SDL_RenderClear( renderer );
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255 );
+    SDL_Rect r;
+    r.y = 500;
+    r.w = 1;
+    std::cout << "plot" << std::endl;
+    for(int k = 0; k < l; k++){
+		r.x = k;
+    	r.h = sqrt(data[k][0]*data[k][0] + data[k][1]*data[k][1])*1000;
+        std::cout << r.h << " ";
+	    SDL_RenderFillRect(renderer, &r );
+	}
+    std::cout << std::endl;
+    SDL_RenderPresent(renderer);
+}
 
 
 ProcessingTools::~ProcessingTools() {

@@ -11,6 +11,9 @@
 #include <complex>
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
 #include <fftw3.h>
+#include <SDL2/SDL.h>
+#include "sndfile.h"
+
 
 class ProcessingTools {
 public:
@@ -28,6 +31,7 @@ public:
 	virtual ~ProcessingTools();
 	static float* get_magnitude(float* magnitudes, fftw_complex* data, const int FFT_SIZE);
 	static float compute_centroid(float* fft_out, const int FFT_SIZE);
+    static void plotData(SDL_Renderer* renderer, fftw_complex* data, int length);
 };
 
 #endif /* PROCESSINGTOOLS_H_ */

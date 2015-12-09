@@ -47,8 +47,36 @@ Processor::~Processor()
 {
 }
 
+SDL_Renderer* Processor::yield_renderer(){
+    int height = 500;
+    if(SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
+        /* Handle problem */
+        fprintf(stderr, "%s\n", SDL_GetError());
+        exit(EXIT_FAILURE);
+    }
+	SDL_Window* window = SDL_CreateWindow("Plot",
+                                SDL_WINDOWPOS_UNDEFINED,
+                                SDL_WINDOWPOS_UNDEFINED,
+                                FFT_SIZE,
+                                height,
+                                SDL_WINDOW_RESIZABLE);
+	SDL_Surface *ecran = NULL;
+	SDL_Event event;
+	ecran = SDL_GetWindowSurface(window);
+	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
+    if(renderer == NULL)
+    {
+        /* Handle problem */
+        fprintf(stderr, "%s\n", SDL_GetError());
+        SDL_Quit();
+        exit(EXIT_FAILURE);
+    }
+    return renderer;
+}
+
 sf_count_t Processor::read_frames(size_t start){
-    size_t count = FFT_SIZE;
+    size_t count = m_bufsize;
     sf_count_t readCount = 0;
     if (!m_file || !m_channelCount) {
         std::cerr << "no file or no channel" << std::endl;
@@ -69,6 +97,7 @@ sf_count_t Processor::read_frames(size_t start){
         std::cerr << "sf_readf_float failed" << std::endl;
 	    exit(EXIT_FAILURE);
 	}
+    //std::cout << readCount << std::endl;
     return readCount;
 }
 
@@ -91,32 +120,43 @@ void handler(int sig) {
 void Processor::to_mono(fftw_complex* fft_data, sf_count_t count){
     int i = 0;
     int j = 0;
+    std::cout << "buffer " << m_bufsize << " " << std::endl;
     for(i=0; i < m_bufsize/m_channelCount; i++){
         float audio_data = 0;
         for(j = 0; j < m_channelCount; j++){
             if(i*m_channelCount+j < count)
                 audio_data += m_buffer[i*m_channelCount+j];
         }
+        std::cout << audio_data << " ";
         audio_data /= m_channelCount;
         fft_in[i][0] = audio_data;
         fft_in[i][1] = 0.;
     }
+    std::cout << std::endl;
+    std::cout << "spectrum" << std::endl;
+    for(int k = 0; k < FFT_SIZE; k++){
+        std::cout << fft_in[k][0] << " " ;
+    }
+    std::cout << std::endl;
 }
 
 void Processor::process(){
     std::cout << "Processing file." << std::endl;
-
+    SDL_Renderer* renderer = yield_renderer();
     size_t frame_idx = 0;
     sf_count_t readCount = 0;
 
     int i = 0;
     float centroid = 0;
+    float to_wait = FFT_SIZE / float(m_sampleRate);
 
     while((readCount = read_frames(frame_idx)) > 0){
         to_mono(fft_in, readCount);
         frame_idx+=readCount;
-
-        if( i < 10 ){
+        fftw_execute(trans);
+        ProcessingTools::plotData(renderer, fft_in, FFT_SIZE);
+        SDL_Delay(500);
+        /*if( i < 10 ){
             fftw_execute(trans);
             for(int j=0; j < m_bufsize/m_channelCount; j++){
                 std::cout << fft_in[j][0];
@@ -128,13 +168,16 @@ void Processor::process(){
             std::cout << (result) << std::endl;
             centroid += result;
             i++;
-        }
-    }    
+        }*/
+    }
+ 
 
     std::cout << "Centroid: ";
     std::cout << (centroid/10) << std::endl;
 
     std::cout << "Processing file done." << std::endl;
+    SDL_DestroyRenderer(renderer);
+    SDL_Quit();
 }
 
 fftw_complex* Processor::get_fft_in(){
