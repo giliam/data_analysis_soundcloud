@@ -42,7 +42,6 @@ m_bufsize(0)
     }
     m_bufsize = FFT_SIZE * m_fileInfo.channels;
     m_buffer = new float[m_bufsize];
-    magnitudes = new float[FFT_SIZE];
 }
 
 Processor::~Processor()
@@ -51,7 +50,7 @@ Processor::~Processor()
 
 SDL_Renderer* Processor::yield_renderer(){
     int height = 500;
-    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
+    if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         /* Handle problem */
         fprintf(stderr, "%s\n", SDL_GetError());
@@ -63,6 +62,9 @@ SDL_Renderer* Processor::yield_renderer(){
                                 FFT_SIZE,
                                 height,
                                 SDL_WINDOW_RESIZABLE);
+	SDL_Surface *ecran = NULL;
+	SDL_Event event;
+	ecran = SDL_GetWindowSurface(window);
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
     if(renderer == NULL)
     {
@@ -132,6 +134,7 @@ void Processor::to_mono(fftw_complex* fft_data, sf_count_t count){
         if( DEBUG_ENABLED ){
             std::cout << audio_data << " ";
         }
+
         audio_data /= m_channelCount;
         fft_in[i][0] = audio_data;
         fft_in[i][1] = 0.;
@@ -144,6 +147,7 @@ void Processor::to_mono(fftw_complex* fft_data, sf_count_t count){
         }
         std::cout << std::endl;
     }
+
 }
 
 void Processor::process(){
@@ -163,31 +167,11 @@ void Processor::process(){
     for (int j = 0; j < FFT_SIZE; ++j) {
         previous_magnitudes[j] = 0;
     }
-
     while((readCount = read_frames(frame_idx)) > 0){
         to_mono(fft_in, readCount);
         frame_idx+=readCount;
         fftw_execute(trans);
-        ProcessingTools::get_magnitude(magnitudes, fft_out, FFT_SIZE);
-        ProcessingTools::plotData(renderer, magnitudes, FFT_SIZE/2);
-        std::cout << "plotted" << std::endl;
-        SDL_Event event;
-
-        /* Poll for events */
-        while( SDL_PollEvent( &event ) ){
-            std::cout << event.type << std::endl;  
-            switch( event.type ){
-                case SDL_QUIT:
-                    must_break = true;
-                    break;
-    
-                default:
-                    break;
-            }
-        }
-        if(must_break){
-            break;
-        }
+        ProcessingTools::plotData(renderer, fft_in, FFT_SIZE);
         SDL_Delay(500);
         if( i < NUMBER_OF_WINDOWS ){
             fftw_execute(trans);

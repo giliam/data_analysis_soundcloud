@@ -172,7 +172,7 @@ void ProcessingTools::plotData(T* data, int l){
 }
 
 
-void ProcessingTools::plotData(SDL_Renderer* renderer, float* magnitudes, int l){
+void ProcessingTools::plotData(SDL_Renderer* renderer, fftw_complex* data, int l){
     // Clear window
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255 );
     SDL_RenderClear( renderer );
@@ -188,8 +188,8 @@ void ProcessingTools::plotData(SDL_Renderer* renderer, float* magnitudes, int l)
 	    SDL_RenderFillRect(renderer, &r );
 	}
     //std::cout << std::endl;
+
     SDL_RenderPresent(renderer);
-    std::cout << "rendered" << std::endl;
 }
 
 
