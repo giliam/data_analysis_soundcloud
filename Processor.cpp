@@ -11,13 +11,14 @@
 #include "ProcessingTools.h"
 
 
-Processor::Processor(const char* path) :
+Processor::Processor(const char* path, const bool debug) :
 m_file(0),
 m_buffer(0),
 m_bufsize(0)
 {
     std::cout << "Reading file at " << path << std::endl;
     m_path = path;
+    DEBUG_ENABLED = debug;
     m_frameCount = 0;
     m_channelCount = 0;
     m_sampleRate = 0;
@@ -119,16 +120,29 @@ void Processor::to_mono(fftw_complex* fft_data, sf_count_t count){
     int i = 0;
     int j = 0;
     //~ std::cout << "buffer " << m_bufsize << " " << std::endl;
+    if( DEBUG_ENABLED ){
+        std::cout << "buffer " << m_bufsize << " " << std::endl;
+    }
     for(i=0; i < m_bufsize/m_channelCount; i++){
         float audio_data = 0;
         for(j = 0; j < m_channelCount; j++){
             if(i*m_channelCount+j < count)
                 audio_data += m_buffer[i*m_channelCount+j];
         }
-        //~ std::cout << audio_data << " ";
+        if( DEBUG_ENABLED ){
+            std::cout << audio_data << " ";
+        }
         audio_data /= m_channelCount;
         fft_in[i][0] = audio_data;
         fft_in[i][1] = 0.;
+    }
+    if( DEBUG_ENABLED ){
+        std::cout << std::endl;
+        std::cout << "spectrum" << std::endl;
+        for(int k = 0; k < FFT_SIZE; k++){
+            std::cout << fft_in[k][0] << " " ;
+        }
+        std::cout << std::endl;
     }
 }
 
@@ -139,9 +153,17 @@ void Processor::process(){
     sf_count_t readCount = 0;
 
     int i = 0;
+    
     float centroid = 0;
+    float flow = 0;
+
     float to_wait = FFT_SIZE / float(m_sampleRate);
     bool must_break = false;
+    float* previous_magnitudes = new float[FFT_SIZE];
+    for (int j = 0; j < FFT_SIZE; ++j) {
+        previous_magnitudes[j] = 0;
+    }
+
     while((readCount = read_frames(frame_idx)) > 0){
         to_mono(fft_in, readCount);
         frame_idx+=readCount;
@@ -167,24 +189,42 @@ void Processor::process(){
             break;
         }
         SDL_Delay(500);
-        /*if( i < 10 ){
+        if( i < NUMBER_OF_WINDOWS ){
             fftw_execute(trans);
             for(int j=0; j < m_bufsize/m_channelCount; j++){
-                std::cout << fft_in[j][0];
+                if( DEBUG_ENABLED ){
+                    std::cout << fft_in[j][0];
+                }
             }
             float* magnitudes = new float[FFT_SIZE];
             float* lolz = ProcessingTools::get_magnitude(magnitudes, fft_out, FFT_SIZE);
-            float result = ProcessingTools::compute_centroid(magnitudes, FFT_SIZE);
-            std::cout << "Result: ";
-            std::cout << (result) << std::endl;
-            centroid += result;
+            float result_centroids = ProcessingTools::compute_centroid(magnitudes, FFT_SIZE);
+            centroid += result_centroids;
+
+            float result_flow = ProcessingTools::compute_flow(magnitudes, previous_magnitudes, FFT_SIZE);
+            flow += result_flow;
+            if(DEBUG_ENABLED){
+                std::cout << "Centroid: ";
+                std::cout << result_centroids << std::endl;
+
+                std::cout << "Flow: ";
+                std::cout << result_flow << std::endl;
+            }
+            for( int j = 0; j < FFT_SIZE; ++j){
+                previous_magnitudes[j] = magnitudes[j];
+            }
             i++;
-        }*/
+        }else{
+            break;
+        }
     }
  
 
     std::cout << "Centroid: ";
-    std::cout << (centroid/10) << std::endl;
+    std::cout << (centroid/NUMBER_OF_WINDOWS) << std::endl;
+
+    std::cout << "Flow: ";
+    std::cout << (flow/NUMBER_OF_WINDOWS) << std::endl;
 
     std::cout << "Processing file done." << std::endl;
     SDL_DestroyRenderer(renderer);
@@ -220,7 +260,7 @@ void save_to_file(float* data)
 int main(int argc, char** argv){
     signal(SIGSEGV, handler);
     if(argc >=1){
-        Processor p(argv[1]);
+        Processor p(argv[1], false);
         p.process();
     }
     return 0;

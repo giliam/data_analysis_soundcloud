@@ -15,12 +15,17 @@ class SoundCloudAnalyse:
     _api_root_ = "http://api.soundcloud.com/"
     _root_ = "http://soundcloud.com/"
     _playlists_ = _api_root_+"playlists/"
+    _groups_ = _api_root_+"groups/"
     _tracks_ = _api_root_+"tracks/"
     _resolve_ = _api_root_ + "resolve/"
     _end_ = "?client_id=" + CLIENT_ID
 
     def get_tracks_from_playlist(self,playlist_id):
         r_tracks = requests.get(self._playlists_ + str(playlist_id) + "?client_id=" + CLIENT_ID) 
+        return json.loads(r_tracks.text)['tracks']
+
+    def get_tracks_from_group(self,group_id):
+        r_tracks = requests.get(self._groups_ + str(group_id) + "/tracks/?client_id=" + CLIENT_ID) 
         return json.loads(r_tracks.text)['tracks']
 
     def get_comments_from_track(self,track_id):

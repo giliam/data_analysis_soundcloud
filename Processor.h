@@ -4,6 +4,8 @@
 
 class Processor{
     protected:
+        bool DEBUG_ENABLED = false;
+        int NUMBER_OF_WINDOWS = 100;
         SF_INFO m_fileInfo;
         SNDFILE *m_file;
         mutable float *m_buffer;
@@ -19,7 +21,7 @@ class Processor{
     public:
         const int FFT_SIZE = 2048;
         virtual ~Processor();
-        Processor(const char * path);
+        Processor(const char * path, const bool debug);
         void to_mono(fftw_complex* fft_data, sf_count_t count);
         sf_count_t read_frames(size_t start);
         void process();
