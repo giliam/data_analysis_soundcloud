@@ -31,7 +31,7 @@ public:
 	virtual ~ProcessingTools();
 	static float* get_magnitude(float* magnitudes, fftw_complex* data, const int FFT_SIZE);
 	static float compute_centroid(float* fft_out, const int FFT_SIZE);
-    static void plotData(SDL_Renderer* renderer, fftw_complex* data, int length);
+    static void plotData(SDL_Renderer* renderer, float* data, int length);
 };
 
 #endif /* PROCESSINGTOOLS_H_ */

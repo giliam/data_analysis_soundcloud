@@ -41,6 +41,7 @@ m_bufsize(0)
     }
     m_bufsize = FFT_SIZE * m_fileInfo.channels;
     m_buffer = new float[m_bufsize];
+    magnitudes = new float[FFT_SIZE];
 }
 
 Processor::~Processor()
@@ -49,7 +50,7 @@ Processor::~Processor()
 
 SDL_Renderer* Processor::yield_renderer(){
     int height = 500;
-    if(SDL_Init(SDL_INIT_VIDEO) < 0)
+    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
     {
         /* Handle problem */
         fprintf(stderr, "%s\n", SDL_GetError());
@@ -61,9 +62,6 @@ SDL_Renderer* Processor::yield_renderer(){
                                 FFT_SIZE,
                                 height,
                                 SDL_WINDOW_RESIZABLE);
-	SDL_Surface *ecran = NULL;
-	SDL_Event event;
-	ecran = SDL_GetWindowSurface(window);
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
     if(renderer == NULL)
     {
@@ -120,24 +118,18 @@ void handler(int sig) {
 void Processor::to_mono(fftw_complex* fft_data, sf_count_t count){
     int i = 0;
     int j = 0;
-    std::cout << "buffer " << m_bufsize << " " << std::endl;
+    //~ std::cout << "buffer " << m_bufsize << " " << std::endl;
     for(i=0; i < m_bufsize/m_channelCount; i++){
         float audio_data = 0;
         for(j = 0; j < m_channelCount; j++){
             if(i*m_channelCount+j < count)
                 audio_data += m_buffer[i*m_channelCount+j];
         }
-        std::cout << audio_data << " ";
+        //~ std::cout << audio_data << " ";
         audio_data /= m_channelCount;
         fft_in[i][0] = audio_data;
         fft_in[i][1] = 0.;
     }
-    std::cout << std::endl;
-    std::cout << "spectrum" << std::endl;
-    for(int k = 0; k < FFT_SIZE; k++){
-        std::cout << fft_in[k][0] << " " ;
-    }
-    std::cout << std::endl;
 }
 
 void Processor::process(){
@@ -149,12 +141,31 @@ void Processor::process(){
     int i = 0;
     float centroid = 0;
     float to_wait = FFT_SIZE / float(m_sampleRate);
-
+    bool must_break = false;
     while((readCount = read_frames(frame_idx)) > 0){
         to_mono(fft_in, readCount);
         frame_idx+=readCount;
         fftw_execute(trans);
-        ProcessingTools::plotData(renderer, fft_in, FFT_SIZE);
+        ProcessingTools::get_magnitude(magnitudes, fft_out, FFT_SIZE);
+        ProcessingTools::plotData(renderer, magnitudes, FFT_SIZE/2);
+        std::cout << "plotted" << std::endl;
+        SDL_Event event;
+
+        /* Poll for events */
+        while( SDL_PollEvent( &event ) ){
+            std::cout << event.type << std::endl;  
+            switch( event.type ){
+                case SDL_QUIT:
+                    must_break = true;
+                    break;
+    
+                default:
+                    break;
+            }
+        }
+        if(must_break){
+            break;
+        }
         SDL_Delay(500);
         /*if( i < 10 ){
             fftw_execute(trans);

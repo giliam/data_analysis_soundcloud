@@ -15,6 +15,7 @@ class Processor{
         fftw_plan trans;
         fftw_complex *fft_in,*fft_out;
         void handler(int sig);
+        float* magnitudes;
     public:
         const int FFT_SIZE = 2048;
         virtual ~Processor();

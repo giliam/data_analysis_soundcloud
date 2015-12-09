@@ -163,7 +163,7 @@ void ProcessingTools::plotData(T* data, int l){
 }
 
 
-void ProcessingTools::plotData(SDL_Renderer* renderer, fftw_complex* data, int l){
+void ProcessingTools::plotData(SDL_Renderer* renderer, float* magnitudes, int l){
     // Clear window
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255 );
     SDL_RenderClear( renderer );
@@ -172,14 +172,15 @@ void ProcessingTools::plotData(SDL_Renderer* renderer, fftw_complex* data, int l
     r.y = 500;
     r.w = 1;
     std::cout << "plot" << std::endl;
-    for(int k = 0; k < l; k++){
+    for(int k = 1; k < l; k++){
 		r.x = k;
-    	r.h = sqrt(data[k][0]*data[k][0] + data[k][1]*data[k][1])*1000;
-        std::cout << r.h << " ";
-	    SDL_RenderFillRect(renderer, &r );
+    	r.h = magnitudes[k]*100;
+        std::cout << "height is " << r.h << " " << k << " ";
+	    SDL_RenderFillRect(renderer, &r);
 	}
-    std::cout << std::endl;
+    std::cout << "finished" << std::endl;
     SDL_RenderPresent(renderer);
+    std::cout << "rendered" << std::endl;
 }
 
 
