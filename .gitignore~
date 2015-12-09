@@ -57,8 +57,4 @@ docs/_build/
 # PyBuilder
 target/
 
-# Sound
-*.wav
-*.mp3
-
 secret_data.py
