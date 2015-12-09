@@ -102,6 +102,15 @@ float ProcessingTools::compute_centroid(float* fft_out, const int FFT_SIZE){
     return up/down;
 }
 
+float ProcessingTools::compute_flow(float* fft_window, float* previous_fft_window, const int FFT_SIZE){
+    float flow = 0;
+    for (int i = 0; i < FFT_SIZE; ++i)
+    {
+        flow += (fft_window[i] - previous_fft_window[i])*(fft_window[i] - previous_fft_window[i]);
+    }
+    return flow;
+}
+
 template<typename T>
 void ProcessingTools::plotData(T* data, int l){
 	int height=500;
@@ -171,14 +180,14 @@ void ProcessingTools::plotData(SDL_Renderer* renderer, fftw_complex* data, int l
     SDL_Rect r;
     r.y = 500;
     r.w = 1;
-    std::cout << "plot" << std::endl;
+    //std::cout << "plot" << std::endl;
     for(int k = 0; k < l; k++){
 		r.x = k;
     	r.h = sqrt(data[k][0]*data[k][0] + data[k][1]*data[k][1])*1000;
-        std::cout << r.h << " ";
+        // std::cout << r.h << " ";
 	    SDL_RenderFillRect(renderer, &r );
 	}
-    std::cout << std::endl;
+    //std::cout << std::endl;
     SDL_RenderPresent(renderer);
 }
 
