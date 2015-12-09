@@ -6,17 +6,17 @@
  */
 
 #include "ProcessingTools.h"
+#include <fstream> 
+
 #include <cmath>
 #include <iostream>
 #include <cstdio>
-#include <SDL2/SDL.h>
 
-
+#include <stdlib.h>     /* exit, EXIT_FAILURE */
 
 
 ProcessingTools::ProcessingTools() {
-	// TODO Auto-generated constructor stub
-
+	std::cout << "COUCOU" << std::endl;
 }
 
 int ProcessingTools::nextpow2(int x){
@@ -57,20 +57,6 @@ double ProcessingTools::max(double * array, int N){
 }
 
 
-double ProcessingTools::max(Matrix<Complex,Dynamic,1>* array, int N){
-	int i;
-	double tmp = 0;
-	for(int k=0; k<N; k++){
-		if(abs((*array)[k]) > tmp){
-			tmp = abs((*array)[k]);
-			i = k;
-		}
-	}
-	std::cout << "max index for " << i << std::endl;
-	return tmp;
-}
-
-
 double ProcessingTools::max(std::vector<double>* array, int N){
 	int i;
 	double tmp = 0;
@@ -84,21 +70,36 @@ double ProcessingTools::max(std::vector<double>* array, int N){
 	return tmp;
 }
 
-
-/*double ProcessingTools::mean(Matrix<Complex,Dynamic,1>* array, int s, int e){
-	double sum = 0;
-	for(int i=s; i < e; i++)
-		sum+=std::abs((*array)[i]);
-	return sum/(e-s);
-}*/
-
-
 template<typename T>
 double ProcessingTools::mean(T* array, int s, int e){
 	double sum = 0;
 	for(int i=s; i < e; i++)
 		sum+=std::abs((*array)[i]);
 	return sum/(e-s);
+}
+
+float* ProcessingTools::get_magnitude(float* magnitudes, fftw_complex* data, const int FFT_SIZE){
+	for (int i = 0; i < FFT_SIZE; ++i)
+	{
+		magnitudes[i] = std::sqrt(data[i][0]*data[i][0]+data[i][1]*data[i][1]);
+	}
+    return magnitudes;
+}
+
+
+float ProcessingTools::compute_centroid(float* fft_out, const int FFT_SIZE){
+    float up = 0, down = 0;
+    for (int i = 0; i < FFT_SIZE; ++i)
+    {
+        up += i*fft_out[i];
+        down += fft_out[i];
+    }
+    if(down == 0){
+        std::cerr << "divide by zero" << std::endl;
+        //exit(EXIT_FAILURE);
+        return 0;
+    }
+    return up/down;
 }
 
 template<typename T>
@@ -161,6 +162,25 @@ void ProcessingTools::plotData(T* data, int l){
 
 }
 
+
+void ProcessingTools::plotData(SDL_Renderer* renderer, fftw_complex* data, int l){
+    // Clear window
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255 );
+    SDL_RenderClear( renderer );
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255 );
+    SDL_Rect r;
+    r.y = 500;
+    r.w = 1;
+    std::cout << "plot" << std::endl;
+    for(int k = 0; k < l; k++){
+		r.x = k;
+    	r.h = sqrt(data[k][0]*data[k][0] + data[k][1]*data[k][1])*1000;
+        std::cout << r.h << " ";
+	    SDL_RenderFillRect(renderer, &r );
+	}
+    std::cout << std::endl;
+    SDL_RenderPresent(renderer);
+}
 
 
 ProcessingTools::~ProcessingTools() {
