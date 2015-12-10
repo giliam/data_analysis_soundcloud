@@ -6,21 +6,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import argparse
+import os
 
-import pyaudio  
-import wave 
+import pyaudio
+import wave
 
 CHUNK_SIZE = 4096
-fs = 44100 
+fs = 44100
 alpha = 0.99
-filename = ""
-parser = argparse.ArgumentParser()
-parser.add_argument('--filename', "-i", type=str)
-args = parser.parse_args()
-if args.filename is not None:
-	filename = args.filename
+
+features_order = ["tag", "title",
+                  "mean_centroid", "std_centroid",
+                  "mean_rolloff", "std_rolloff",
+                  "mean_flux", "std_flux",
+                  "mean_zerocrossings", "std_zerocrossings",
+                  "low_energy",
+                  "period0", "ratioperiod1", "ratioperiod2", "ratioperiod3",
+                  "amp0", "amp1", "amp2", "amp3"]
 
 
+def to_wav(file_path, wav_file_name):
+    import pydub
+    pydub.AudioSegment.converter = r"C:\\Users\\etienne\\Downloads\\ffmpeg-20151209-git-82f3d47-win64-static\\ffmpeg-20151209-git-82f3d47-win64-static\\bin\\ffmpeg.exe"
+    print "converting {}".format(file_path)
+    sound = pydub.AudioSegment.from_mp3(file_path)
+    sound.export(wav_file_name, format="wav")
 
     
 def to_mono(data):
@@ -140,10 +150,9 @@ def get_peaks(autocorrel, nb_peaks, lower_limit):
         amps.append(m)
     return idx, amps
 
-def process():
+def process(filename, output_file, music_title):
     k = 0
     global fs
-    global filename
     global alpha
     NB_WINDOWS = int(10/(float(CHUNK_SIZE)/fs)) # 10 seconds excerpt
     play(NB_WINDOWS, CHUNK_SIZE)
@@ -202,7 +211,7 @@ def process():
     signal = lowpass_filter(signal, alpha)
     signal = downsampling(signal, 32)
     signal = recenter(signal)
-    print "autocorrelating"
+    
     autocorrel = autocorrelation(signal)
     plt.plot(autocorrel)
     plt.show()
@@ -243,7 +252,12 @@ def process():
     mean_energy = np.mean(energy_list)
     low_energy = float(sum([e < mean_energy for e in energy_list]))/len(energy_list)
     final_features["low_energy"] = low_energy
-    print final_features
+
+    final_features["title"] = music_title
+
+    # print final_features
+    to_print = [str(final_features[t]) if t in final_features else '.' for t in features_order]
+    output_file.write(csvlike(to_print))
 
 
 def play(NB_WINDOWS, CHUNK_SIZE):
@@ -272,4 +286,35 @@ def play(NB_WINDOWS, CHUNK_SIZE):
     #close PyAudio  
     p.terminate()  
     
-process()
+def csvlike(l):
+    return '\t'.join(l) + '\n'
+
+def print_titles(output_file):
+    output_file.write(csvlike(features_order))
+
+def main():
+    # filename = ""
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--filename', "-i", type=str)
+    # args = parser.parse_args()
+    # if args.filename is not None:
+    #     filename = args.filename
+
+    current_path = os.path.dirname(os.path.realpath(__file__))
+    input_path = os.path.join(current_path, 'input')
+    output_file = open(os.path.join(current_path, 'output', 'output.csv'), 'w+')
+
+    print_titles(output_file)
+    for music_title in os.listdir(input_path):
+        fn = os.path.join(input_path, music_title)
+        if os.path.isfile(fn):
+            if '.mp3' in fn:
+                wav_file_name = fn.replace('.mp3', '.wav')
+                if not os.path.isfile(wav_file_name):
+                    to_wav(fn, wav_file_name)
+                    process(wav_file_name, output_file, music_title)
+            else:
+                process(fn, output_file, music_title)
+
+if __name__ == "__main__":
+    main()
