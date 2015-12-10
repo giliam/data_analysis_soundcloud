@@ -155,7 +155,7 @@ def process(filename, output_file, music_title):
     global fs
     global alpha
     NB_WINDOWS = int(10/(float(CHUNK_SIZE)/fs)) # 10 seconds excerpt
-    play(NB_WINDOWS, CHUNK_SIZE)
+    play(filename, NB_WINDOWS, CHUNK_SIZE)
     MAX_BPM = 200 # discard peaks for faster bpm in autocorrel
     downsampling_factor = 16
     fs, data = wavfile.read(filename)
@@ -213,8 +213,6 @@ def process(filename, output_file, music_title):
     signal = recenter(signal)
     
     autocorrel = autocorrelation(signal)
-    plt.plot(autocorrel)
-    plt.show()
     lower_limit = int(60. * fs / (downsampling_factor*MAX_BPM))
     idxs, amps = get_peaks(autocorrel, 4, lower_limit)
     sum_amps = sum(amps)
@@ -260,7 +258,7 @@ def process(filename, output_file, music_title):
     output_file.write(csvlike(to_print))
 
 
-def play(NB_WINDOWS, CHUNK_SIZE):
+def play(filename, NB_WINDOWS, CHUNK_SIZE):
     #define stream chunk   
     chunk = CHUNK_SIZE  
     
