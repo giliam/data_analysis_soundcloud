@@ -49,6 +49,11 @@ def sum_amplitude(spectrum):
     return np.sum(spectrum)
 
 
+def compute_tempo(autocorrel,downsampling_factor):
+    global fs
+    return fs*60/(autocorrel*downsampling_factor)
+
+
 def compute_fft(data):
     return fft(data)
     
@@ -141,16 +146,18 @@ def process():
     global filename
     global alpha
     NB_WINDOWS = int(10/(float(CHUNK_SIZE)/fs)) # 10 seconds excerpt
-    #~ play(NB_WINDOWS, CHUNK_SIZE)
+    play(NB_WINDOWS, CHUNK_SIZE)
     MAX_BPM = 200 # discard peaks for faster bpm in autocorrel
     downsampling_factor = 16
     fs, data = wavfile.read(filename)
     data = to_mono(data)
+
     k = len(data)/3/CHUNK_SIZE
     features = {"centroid" : [], "rolloff" : [], "flux" : [], "zerocrossings" : [],
     "lowenergy":[]}
     count_windows = 0
     hamming = get_hamming(CHUNK_SIZE)
+    # get previous window for flow computation.
     prev_spectrum = normalize(abs(compute_fft(apply_window(pull_chunk(data, k-1), hamming))[0:CHUNK_SIZE/2]))
     energy_list = []
     b = True
@@ -197,6 +204,8 @@ def process():
     signal = recenter(signal)
     print "autocorrelating"
     autocorrel = autocorrelation(signal)
+    plt.plot(autocorrel)
+    plt.show()
     lower_limit = int(60. * fs / (downsampling_factor*MAX_BPM))
     idxs, amps = get_peaks(autocorrel, 4, lower_limit)
     sum_amps = sum(amps)
@@ -211,7 +220,7 @@ def process():
     period3 = (60. * fs)/(idxs[3]*downsampling_factor)
     ratio_period3 = period3/period2
     amp3 = amps[3]/sum_amps
-    
+
     final_features={}
     final_features["period0"] = period0
     final_features["ratioperiod1"] = ratio_period1
