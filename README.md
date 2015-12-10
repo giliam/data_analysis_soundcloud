@@ -17,3 +17,9 @@ Compile with g++ Processor.cpp ProcessingTools.cpp -o processor.o -lsndfile -lff
 =======
 Compile with g++ Processor.cpp -o processor.o -lsndfile -lfftw3 -std=c++11 -lSDL2
 >>>>>>> parent of 8e74245... extraction des descripteurs fréquentiels
+
+Put all your .mp3 or .wav files in directory `input` and do
+```
+python processor.py
+```
+and then check the file `output\output.csv`
