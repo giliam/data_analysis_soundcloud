@@ -118,13 +118,32 @@ def autocorrelation(signal):
         out.append(s/N)
     return out
 
+
+
+def get_peaks(autocorrel, nb_peaks, lower_limit):
+    idx = []
+    amps = []
+    for i in range(nb_peaks):
+        m = autocorrel[lower_limit]
+        tmp = lower_limit
+        for j in range(lower_limit, len(autocorrel)):
+            if autocorrel[j] > m:
+                m = autocorrel[j]
+                tmp = j
+        autocorrel[tmp] = 0
+        idx.append(tmp)
+        amps.append(m)
+    return idx, amps
+
 def process():
     k = 0
     global fs
     global filename
     global alpha
     NB_WINDOWS = int(10/(float(CHUNK_SIZE)/fs)) # 10 seconds excerpt
-    play(NB_WINDOWS, CHUNK_SIZE)
+    #~ play(NB_WINDOWS, CHUNK_SIZE)
+    MAX_BPM = 200 # discard peaks for faster bpm in autocorrel
+    downsampling_factor = 16
     fs, data = wavfile.read(filename)
     data = to_mono(data)
     k = len(data)/3/CHUNK_SIZE
@@ -136,7 +155,7 @@ def process():
     energy_list = []
     b = True
     sig = []
-    beat_histogram = [0]*300
+    beat_histogram = [0]*MAX_BPM
     NB_ACCU_RYTHM = 131072/CHUNK_SIZE
     nb_rythm_count = 0
     rythmic_data = []
@@ -147,24 +166,24 @@ def process():
         chunk_before = pull_chunk(data, k)
         k+=1
         count_windows+=1
-        #~ chunk = apply_window(chunk_before, hamming)
-        #~ spectrum = compute_fft(chunk)
-        #~ spectrum = normalize(abs(spectrum[0:len(spectrum)/2]))
-        #~ energy_list.append(compute_energy(spectrum))
-        #~ sum_amp = 1
-        #~ cent = compute_centroid(spectrum, sum_amp)
-        #~ features["centroid"].append(cent)
-        #~ roll = compute_rolloff(spectrum, sum_amp)
-        #~ features["rolloff"].append(roll)
-        #~ flux = compute_flux(spectrum, prev_spectrum)
-        #~ features["flux"].append(flux)
-        #~ zc = compute_zerocrossings(chunk)
-        #~ m = np.mean(chunk)
-        #~ if count_windows < 100:
-            #~ sig_part = [c-m for c in chunk]
-            #~ sig.extend(sig_part)
-        #~ features["zerocrossings"].append(zc)
-        #~ prev_spectrum = spectrum
+        chunk = apply_window(chunk_before, hamming)
+        spectrum = compute_fft(chunk)
+        spectrum = normalize(abs(spectrum[0:len(spectrum)/2]))
+        energy_list.append(compute_energy(spectrum))
+        sum_amp = 1
+        cent = compute_centroid(spectrum, sum_amp)
+        features["centroid"].append(cent)
+        roll = compute_rolloff(spectrum, sum_amp)
+        features["rolloff"].append(roll)
+        flux = compute_flux(spectrum, prev_spectrum)
+        features["flux"].append(flux)
+        zc = compute_zerocrossings(chunk)
+        m = np.mean(chunk)
+        if count_windows < 100:
+            sig_part = [c-m for c in chunk]
+            sig.extend(sig_part)
+        features["zerocrossings"].append(zc)
+        prev_spectrum = spectrum
         
         """ Accumulation of rythmic data """
         if nb_rythm_count < NB_ACCU_RYTHM:
@@ -178,20 +197,44 @@ def process():
     signal = recenter(signal)
     print "autocorrelating"
     autocorrel = autocorrelation(signal)
-    plt.plot(autocorrel)
-    plt.show()
-    print "mean_centroid", np.mean(features["centroid"])
-    print "std_centroid", np.std(features["centroid"])
-    print "mean_rolloff", np.mean(features["rolloff"])
-    print "std_rolloff", np.std(features["rolloff"])
-    print "mean_flux", np.mean(features["flux"])
-    print "std_flux", np.std(features["flux"])
-    print "mean_zerocrossings", np.mean(features["zerocrossings"])
-    print "std_zerocrossings", np.std(features["zerocrossings"])
+    lower_limit = int(60. * fs / (downsampling_factor*MAX_BPM))
+    idxs, amps = get_peaks(autocorrel, 4, lower_limit)
+    sum_amps = sum(amps)
+    period0 = (60. * fs)/(idxs[0]*downsampling_factor) # bmp associated with the first peak
+    amp0 = amps[0]/sum_amps
+    period1 = (60. * fs)/(idxs[1]*downsampling_factor)
+    ratio_period1 = period1/period0
+    amp1 = amps[1]/sum_amps
+    period2 = (60. * fs)/(idxs[2]*downsampling_factor)
+    ratio_period2 = period2/period1
+    amp2 = amps[2]/sum_amps
+    period3 = (60. * fs)/(idxs[3]*downsampling_factor)
+    ratio_period3 = period3/period2
+    amp3 = amps[3]/sum_amps
+    
+    final_features={}
+    final_features["period0"] = period0
+    final_features["ratioperiod1"] = ratio_period1
+    final_features["ratioperiod2"] = ratio_period2
+    final_features["ratioperiod3"] = ratio_period3
+    
+    final_features["amp0"] = amp0
+    final_features["amp1"] = amp1
+    final_features["amp2"] = amp2
+    final_features["amp3"] = amp3
+
+    final_features["mean_centroid"] = np.mean(features["centroid"])
+    final_features["std_centroid"] = np.std(features["centroid"])
+    final_features["mean_rolloff"] = np.mean(features["rolloff"])
+    final_features["std_rolloff"] = np.std(features["rolloff"])
+    final_features["mean_flux"] = np.mean(features["flux"])
+    final_features["std_flux"] = np.std(features["flux"])
+    final_features["mean_zerocrossings"] = np.mean(features["zerocrossings"])
+    final_features["std_zerocrossings"] = np.std(features["zerocrossings"])
     mean_energy = np.mean(energy_list)
     low_energy = float(sum([e < mean_energy for e in energy_list]))/len(energy_list)
-    print "low_energy", low_energy
-    
+    final_features["low_energy"] = low_energy
+    print final_features
 
 
 def play(NB_WINDOWS, CHUNK_SIZE):
