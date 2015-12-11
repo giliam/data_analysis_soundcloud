@@ -59,6 +59,11 @@ def sum_amplitude(spectrum):
     return np.sum(spectrum)
 
 
+def compute_tempo(autocorrel,downsampling_factor):
+    global fs
+    return fs*60/(autocorrel*downsampling_factor)
+
+
 def compute_fft(data):
     return fft(data)
     
@@ -150,16 +155,18 @@ def process(filename, output_file, music_title):
     global fs
     global alpha
     NB_WINDOWS = int(10/(float(CHUNK_SIZE)/fs)) # 10 seconds excerpt
-    #~ play(NB_WINDOWS, CHUNK_SIZE)
+    play(filename, NB_WINDOWS, CHUNK_SIZE)
     MAX_BPM = 200 # discard peaks for faster bpm in autocorrel
     downsampling_factor = 16
     fs, data = wavfile.read(filename)
     data = to_mono(data)
+
     k = len(data)/3/CHUNK_SIZE
     features = {"centroid" : [], "rolloff" : [], "flux" : [], "zerocrossings" : [],
     "lowenergy":[]}
     count_windows = 0
     hamming = get_hamming(CHUNK_SIZE)
+    # get previous window for flow computation.
     prev_spectrum = normalize(abs(compute_fft(apply_window(pull_chunk(data, k-1), hamming))[0:CHUNK_SIZE/2]))
     energy_list = []
     b = True
@@ -220,7 +227,7 @@ def process(filename, output_file, music_title):
     period3 = (60. * fs)/(idxs[3]*downsampling_factor)
     ratio_period3 = period3/period2
     amp3 = amps[3]/sum_amps
-    
+
     final_features={}
     final_features["period0"] = period0
     final_features["ratioperiod1"] = ratio_period1
@@ -251,7 +258,7 @@ def process(filename, output_file, music_title):
     output_file.write(csvlike(to_print))
 
 
-def play(NB_WINDOWS, CHUNK_SIZE):
+def play(filename, NB_WINDOWS, CHUNK_SIZE):
     #define stream chunk   
     chunk = CHUNK_SIZE  
     
