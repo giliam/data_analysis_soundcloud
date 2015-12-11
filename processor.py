@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import math
 import argparse
 import os
-
+import csv
 import pyaudio
 import wave
 
@@ -23,6 +23,40 @@ features_order = ["tag", "title",
                   "low_energy",
                   "period0", "ratioperiod1", "ratioperiod2", "ratioperiod3",
                   "amp0", "amp1", "amp2", "amp3"]
+
+
+filename = ""
+tag = ""
+output = ""
+title=""
+parser = argparse.ArgumentParser()
+parser.add_argument('--filename', "-i", type=str)
+parser.add_argument('--tag', "-t", type=str)
+parser.add_argument('--out', "-o", type=str)
+parser.add_argument('--title', "-u", type=str)
+args = parser.parse_args()
+
+if args.filename is not None:
+    filename = args.filename
+if args.tag is not None:
+    tag = args.tag
+if args.out is not None:
+    output = args.out
+if args.title is not None:
+    title = args.title
+
+
+
+def write_csv(features):
+    global tag
+    global output
+    global features_order
+    global filename
+    with open(output, "a+") as csvfile:
+        writer = csv.writer(csvfile, delimiter=",", quotechar='"')
+        out = [features[name] for name in features_order]
+        writer.writerow(out)
+    print "\n\n\n\n"
 
 
 def to_wav(file_path, wav_file_name):
@@ -250,12 +284,14 @@ def process(filename, output_file, music_title):
     mean_energy = np.mean(energy_list)
     low_energy = float(sum([e < mean_energy for e in energy_list]))/len(energy_list)
     final_features["low_energy"] = low_energy
-
     final_features["title"] = music_title
-
+    final_features["tag"] = tag
     # print final_features
-    to_print = [str(final_features[t]) if t in final_features else '.' for t in features_order]
-    output_file.write(csvlike(to_print))
+    if output_file is not None:
+        to_print = [str(final_features[t]) if t in final_features else '.' for t in features_order]
+        output_file.write(csvlike(to_print))
+    else:
+        write_csv(final_features)
 
 
 def play(filename, NB_WINDOWS, CHUNK_SIZE):
@@ -290,14 +326,10 @@ def csvlike(l):
 def print_titles(output_file):
     output_file.write(csvlike(features_order))
 
-def main():
-    # filename = ""
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--filename', "-i", type=str)
-    # args = parser.parse_args()
-    # if args.filename is not None:
-    #     filename = args.filename
 
+process(filename, None, title)
+
+def main():
     current_path = os.path.dirname(os.path.realpath(__file__))
     input_path = os.path.join(current_path, 'input')
     output_file = open(os.path.join(current_path, 'output', 'output.csv'), 'w+')
@@ -314,5 +346,5 @@ def main():
             else:
                 process(fn, output_file, music_title)
 
-if __name__ == "__main__":
+if __name__ == "__main__" and filename == "":
     main()
